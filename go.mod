@@ -1,4 +1,4 @@
-module casdoc
+module github.com/casbin/casdoc
 
 go 1.19
 
