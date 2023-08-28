@@ -16,6 +16,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -28,16 +29,17 @@ var (
 )
 
 func init() {
-	viper.SetDefault("AuthToken", "")
 	viper.SetDefault("RPM", 3)
 	viper.SetDefault("TPM", 40000)
-	viper.SetDefault("RepoPath", "")
 
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
 
-	_ = viper.ReadInConfig()
+	err := viper.ReadInConfig()
+	if err != nil {
+		fmt.Println("Failed to read config file:", err)
+	}
 
 	viper.SetEnvPrefix("CASDOC")
 	viper.AutomaticEnv()
@@ -47,27 +49,23 @@ func init() {
 	RPM = viper.GetInt("RPM")
 	TPM = viper.GetInt("TPM")
 
-	if AuthToken == "" {
-		fmt.Println("Not found AuthToken, please type it: ")
-		var input string
-		_, _ = fmt.Scanln(&input)
-		AuthToken = input
-		if AuthToken == "" {
-			panic("AuthToken is empty")
-		}
-	}
-
-	if RepoPath == "" {
-		fmt.Println("Not found RepoPath, please type it: ")
-		var input string
-		_, _ = fmt.Scanln(&input)
-		RepoPath = input
-		if RepoPath == "" {
-			panic("RepoPath is empty")
-		}
-	}
+	checkEmptyValue(&AuthToken, "AuthToken")
+	checkEmptyValue(&RepoPath, "RepoPath")
 
 	fmt.Println("RepoPath: ", RepoPath)
 	fmt.Println("RPM: ", RPM)
 	fmt.Println("TPM: ", TPM)
+}
+
+func checkEmptyValue(value *string, name string) {
+	if *value == "" {
+		fmt.Printf("Not found %s, please type it: ", name)
+		var input string
+		_, _ = fmt.Scanln(&input)
+		*value = input
+		if *value == "" {
+			fmt.Printf("%s is empty\n", name) // replace it without print stack trace, or panic to print stack trace
+			os.Exit(1)
+		}
+	}
 }

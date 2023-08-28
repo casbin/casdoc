@@ -19,10 +19,11 @@ import (
 	"path"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/casbin/casdoc/config"
 	. "github.com/casbin/casdoc/logger"
 	"github.com/casbin/casdoc/utils"
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -30,16 +31,13 @@ func main() {
 	err := Q.GetFileList(path.Join(config.RepoPath, "/docs/"))
 	Q.PrintFileList()
 	if err != nil {
-		Logger.Errorf("Failed to get file list")
-		panic(err)
+		Logger.Fatalf("Failed to get file list, err: %v", err)
 	}
 
-	counter := 0
 	totalItems := len(Q.Item)
 
-	for {
+	for counter := 1; !Q.Empty(); counter++ {
 		p := Q.Pop()
-		counter++
 		Logger = log.WithField("rate", fmt.Sprintf("%d/%d", counter, totalItems))
 
 		Logger.Info("Now polish: ", strings.TrimPrefix(p, config.RepoPath))
@@ -48,10 +46,6 @@ func main() {
 		if err != nil {
 			Q.AddToFailedList(p)
 			Logger.Errorf("error: %v\n", err)
-		}
-
-		if Q.Empty() {
-			break
 		}
 	}
 }
