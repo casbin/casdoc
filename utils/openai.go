@@ -19,22 +19,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/casbin/casdoc/config"
-	. "github.com/casbin/casdoc/logger"
 	"github.com/sashabaranov/go-openai"
 	"golang.org/x/time/rate"
+
+	"github.com/casbin/casdoc/config"
+	. "github.com/casbin/casdoc/logger"
 )
 
-var OpenAIClient *openai.Client
-var RequestLimiter *rate.Limiter
-var ToeknLimiter *rate.Limiter
+var (
+	OpenAIClient   *openai.Client
+	RequestLimiter *rate.Limiter
+	TokenLimiter   *rate.Limiter
+)
 
 func init() {
 	OpenAIClient = openai.NewClient(config.AuthToken)
 	requestLimit := rate.Every(time.Minute / time.Duration(config.RPM))
 	tokenLimit := rate.Every(time.Minute / time.Duration(config.TPM))
 	RequestLimiter = rate.NewLimiter(requestLimit, config.RPM)
-	ToeknLimiter = rate.NewLimiter(tokenLimit, config.TPM)
+	TokenLimiter = rate.NewLimiter(tokenLimit, config.TPM)
 }
 
 func Wait(tokenNumber int) (err error) {
@@ -42,7 +45,7 @@ func Wait(tokenNumber int) (err error) {
 	if err != nil {
 		return
 	}
-	err = ToeknLimiter.WaitN(context.Background(), tokenNumber)
+	err = TokenLimiter.WaitN(context.Background(), tokenNumber)
 	if err != nil {
 		return
 	}

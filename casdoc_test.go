@@ -15,7 +15,6 @@
 package main
 
 import (
-	"fmt"
 	"path"
 	"strings"
 	"testing"
@@ -23,69 +22,45 @@ import (
 	"github.com/casbin/casdoc/config"
 	. "github.com/casbin/casdoc/logger"
 	"github.com/casbin/casdoc/utils"
-	log "github.com/sirupsen/logrus"
 )
 
 func TestPolishDocs(t *testing.T) {
 	Q := utils.WorkQueue{}
 	err := Q.GetFileList(path.Join(config.RepoPath, "/docs/"))
 	if err != nil {
-		Logger.Errorf("Failed to get file list")
-		panic(err)
+		t.Fatalf("Failed to get file list, err: %v", err)
 	}
 
-	counter := 0
 	totalItems := len(Q.Item)
 
-	for {
+	for counter := 1; !Q.Empty(); counter++ {
 		p := Q.Pop()
-		counter++
-		Logger = log.WithField("rate", fmt.Sprintf("%d/%d", counter, totalItems))
-
-		Logger.Info("Now polish: ", strings.TrimPrefix(p, config.RepoPath))
-		err = utils.Polish(p)
-
-		if err != nil {
+		t.Logf("rate: %d/%d, now polish: %s", counter, totalItems, strings.TrimPrefix(p, config.RepoPath))
+		if err := utils.Polish(p); err != nil {
 			Q.AddToFailedList(p)
 			Logger.Errorf("error: %v\n", err)
-		}
-
-		if Q.Empty() {
-			break
 		}
 	}
 }
 
 func TestTranslateDocs(t *testing.T) {
-	langs := []string{"zh", "fr", "de", "ko", "ru", "ja"}
+	languages := []string{"zh", "fr", "de", "ko", "ru", "ja"}
 
 	Q := utils.WorkQueue{}
 	err := Q.GetFileList(path.Join(config.RepoPath, "/docs/"))
 	if err != nil {
-		Logger.Errorf("Failed to get file list")
-		panic(err)
+		Logger.Fatalf("Failed to get file list")
 	}
 
-	counter := 0
 	totalItems := len(Q.Item)
 
-	for _, lang := range langs {
-		Logger = log.WithField("lang", lang)
-		for {
+	for _, lang := range languages {
+		for counter := 1; !Q.Empty(); counter++ {
 			p := Q.Pop()
-			counter++
-			Logger = Logger.WithField("rate", fmt.Sprintf("%d/%d", counter, totalItems))
-
-			Logger.Info("Now translate: ", strings.TrimPrefix(p, config.RepoPath))
-			err = utils.Translate(p, lang)
-
-			if err != nil {
+			t.Logf("lang: %s, rate: %d/%d, now translate: %s", lang, counter, totalItems, strings.TrimPrefix(p, config.RepoPath))
+			if err := utils.Translate(p, lang); err != nil {
 				Q.AddToFailedList(p)
 				Logger.Errorf("error: %v\n", err)
-			}
-
-			if Q.Empty() {
-				break
 			}
 		}
 	}

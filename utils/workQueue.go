@@ -27,10 +27,13 @@ type WorkQueue struct {
 
 // GetFileList get all doc in the docs directory
 func (q *WorkQueue) GetFileList(docDir string) error {
+	isMarkdownFile := func(path string) bool {
+		ext := filepath.Ext(path)
+		return ext == ".md" || ext == ".mdx"
+	}
+
 	err := filepath.Walk(docDir, func(path string, info fs.FileInfo, err error) error {
-		var name = info.Name()
-		var size = len(name)
-		if !info.IsDir() && (name[size-3:] == "mdx" || name[size-2:] == "md") {
+		if !info.IsDir() && isMarkdownFile(path) {
 			q.Push(path)
 		}
 		return err

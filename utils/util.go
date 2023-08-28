@@ -15,23 +15,24 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/casbin/casdoc/config"
-	. "github.com/casbin/casdoc/logger"
-	"github.com/casbin/casdoc/prompt"
 	"github.com/pkoukk/tiktoken-go"
 	"github.com/sashabaranov/go-openai"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/casbin/casdoc/config"
+	. "github.com/casbin/casdoc/logger"
+	"github.com/casbin/casdoc/prompt"
 )
 
 // i18n path
 const i18nPathPrefix = "/i18n/"
+
 const i18nPathSuffix = "/docusaurus-plugin-content-docs/current/"
 
 // returns the context of a doc
@@ -41,8 +42,7 @@ func getDocContext(path string) (string, error) {
 		log.Errorf("Failed to get context of doc: %s", path)
 		return "", nil
 	}
-	res := string(b)
-	return res, nil
+	return string(b), nil
 }
 
 // return the number of tokens of a text
@@ -125,7 +125,7 @@ func processDoc(p string, req openai.ChatCompletionRequest) (processedDoc string
 
 // Polish a doc
 func Polish(path string) error {
-	polishedDoc, err := processDoc(path, prompt.PolishRequest)
+	polishedDoc, err := processDoc(path, prompt.LanguageRequests[prompt.Polish])
 	if err != nil {
 		return err
 	}
@@ -140,22 +140,9 @@ func Polish(path string) error {
 
 // Translate a doc to another language
 func Translate(docPath string, lang string) error {
-	var req openai.ChatCompletionRequest
-	switch lang {
-	case "zh": // 中文
-		req = prompt.ChineseRequest
-	case "fr": // Français
-		req = prompt.FrenchRequest
-	case "de": // Deutsch
-		req = prompt.GermanRequest
-	case "ko": // 한국어
-		req = prompt.KoreanRequest
-	case "ru": // Русский
-		req = prompt.RussianRequest
-	case "ja": // 日本語
-		req = prompt.JapaneseRequest
-	default:
-		return errors.New(fmt.Sprint("unknown language: ", lang))
+	req, ok := prompt.LanguageRequests[lang]
+	if !ok {
+		return fmt.Errorf("unknown language: %s", lang)
 	}
 
 	translatedDoc, err := processDoc(docPath, req)
